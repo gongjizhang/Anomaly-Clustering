@@ -8,10 +8,10 @@ import torch
 import torch.nn.functional as F
 import tqdm
 
-import patchcore
-import patchcore.backbones
-import patchcore.common
-import patchcore.sampler
+import models.patchcore
+import models.patchcore.backbones
+import models.patchcore.common
+import models.patchcore.sampler
 import math
 
 LOGGER = logging.getLogger(__name__)
@@ -34,8 +34,8 @@ class PatchCore(torch.nn.Module):
         patchsize=3,
         patchstride=1,
         anomaly_score_num_nn=1,
-        featuresampler=patchcore.sampler.IdentitySampler(),
-        nn_method=patchcore.common.FaissNN(False, 4),
+        featuresampler=models.patchcore.sampler.IdentitySampler(),
+        nn_method=models.patchcore.common.FaissNN(False, 4),
         **kwargs,
     ):
         self.backbone = backbone.to(device)
@@ -47,19 +47,19 @@ class PatchCore(torch.nn.Module):
 
         self.forward_modules = torch.nn.ModuleDict({})
 
-        feature_aggregator = patchcore.common.NetworkFeatureAggregator(
+        feature_aggregator = models.patchcore.common.NetworkFeatureAggregator(
             self.backbone, self.layers_to_extract_from, self.device
         )
         feature_dimensions = feature_aggregator.feature_dimensions(input_shape)
         self.forward_modules["feature_aggregator"] = feature_aggregator
 
-        preprocessing = patchcore.common.Preprocessing(
+        preprocessing = models.patchcore.common.Preprocessing(
             feature_dimensions, pretrain_embed_dimension
         )
         self.forward_modules["preprocessing"] = preprocessing
 
         self.target_embed_dimension = target_embed_dimension
-        preadapt_aggregator = patchcore.common.Aggregator(
+        preadapt_aggregator = models.patchcore.common.Aggregator(
             target_dim=target_embed_dimension
         )
 
@@ -67,11 +67,11 @@ class PatchCore(torch.nn.Module):
 
         self.forward_modules["preadapt_aggregator"] = preadapt_aggregator
 
-        self.anomaly_scorer = patchcore.common.NearestNeighbourScorer(
+        self.anomaly_scorer = models.patchcore.common.NearestNeighbourScorer(
             n_nearest_neighbours=anomaly_score_num_nn, nn_method=nn_method
         )
 
-        self.anomaly_segmentor = patchcore.common.RescaleSegmentor(
+        self.anomaly_segmentor = models.patchcore.common.RescaleSegmentor(
             device=self.device, target_size=input_shape[-2:]
         )
 
@@ -258,13 +258,13 @@ class PatchCore(torch.nn.Module):
         self,
         load_path: str,
         device: torch.device,
-        nn_method: patchcore.common.FaissNN(False, 4),
+        nn_method: models.patchcore.common.FaissNN(False, 4),
         prepend: str = "",
     ) -> None:
         LOGGER.info("Loading and initializing PatchCore.")
         with open(self._params_file(load_path, prepend), "rb") as load_file:
             patchcore_params = pickle.load(load_file)
-        patchcore_params["backbone"] = patchcore.backbones.load(
+        patchcore_params["backbone"] = models.patchcore.backbones.load(
             patchcore_params["backbone.name"]
         )
         patchcore_params["backbone"].name = patchcore_params["backbone.name"]
@@ -291,8 +291,8 @@ class AnomalyClusteringCore(torch.nn.Module):
         patchsize=3,
         patchstride=1,
         anomaly_score_num_nn=1,
-        featuresampler=patchcore.sampler.IdentitySampler(),
-        nn_method=patchcore.common.FaissNN(False, 4),
+        featuresampler=models.patchcore.sampler.IdentitySampler(),
+        nn_method=models.patchcore.common.FaissNN(False, 4),
         **kwargs,
     ):
         self.backbone = backbone.to(device)
@@ -304,19 +304,19 @@ class AnomalyClusteringCore(torch.nn.Module):
 
         self.forward_modules = torch.nn.ModuleDict({})
 
-        feature_aggregator = patchcore.common.NetworkFeatureAggregator(
+        feature_aggregator = models.patchcore.common.NetworkFeatureAggregator(
             self.backbone, self.layers_to_extract_from, self.device
         )
         feature_dimensions = feature_aggregator.feature_dimensions(input_shape)
         self.forward_modules["feature_aggregator"] = feature_aggregator
 
-        preprocessing = patchcore.common.Preprocessing(
+        preprocessing = models.patchcore.common.Preprocessing(
             feature_dimensions, pretrain_embed_dimension
         )
         self.forward_modules["preprocessing"] = preprocessing
 
         self.target_embed_dimension = target_embed_dimension
-        preadapt_aggregator = patchcore.common.Aggregator(
+        preadapt_aggregator = models.patchcore.common.Aggregator(
             target_dim=target_embed_dimension
         )
 
@@ -324,11 +324,11 @@ class AnomalyClusteringCore(torch.nn.Module):
 
         self.forward_modules["preadapt_aggregator"] = preadapt_aggregator
 
-        self.anomaly_scorer = patchcore.common.NearestNeighbourScorer(
+        self.anomaly_scorer = models.patchcore.common.NearestNeighbourScorer(
             n_nearest_neighbours=anomaly_score_num_nn, nn_method=nn_method
         )
 
-        self.anomaly_segmentor = patchcore.common.RescaleSegmentor(
+        self.anomaly_segmentor = models.patchcore.common.RescaleSegmentor(
             device=self.device, target_size=input_shape[-2:]
         )
 

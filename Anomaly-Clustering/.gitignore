@@ -1,2 +1,4 @@
 *.png
 *.pickle
+/out/*
+/outputs/*

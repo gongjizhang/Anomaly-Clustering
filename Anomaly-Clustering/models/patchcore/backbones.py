@@ -1,6 +1,6 @@
 import timm  # noqa
 import torchvision.models as models  # noqa
-import patchcore.vision_transformer as vits
+import models.patchcore.vision_transformer as vits
 import torch
 
 

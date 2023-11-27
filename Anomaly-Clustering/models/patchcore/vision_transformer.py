@@ -21,7 +21,7 @@ from functools import partial
 import torch
 import torch.nn as nn
 
-from patchcore.utils import trunc_normal_
+from models.patchcore.utils import trunc_normal_
 
 
 def drop_path(x, drop_prob: float = 0., training: bool = False):
