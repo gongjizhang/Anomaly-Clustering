@@ -445,9 +445,8 @@ class AnomalyClusteringCore(torch.nn.Module):
         return self._embed(data, mask)
     
     def _attentionweight(self, mask):
-        mask = torch.max_pool2d(mask, 8, 8)
-        return mask 
-    
+        
+        return torch.max_pool2d(mask, 16, 16)
     
 # Image handling classes.
 class PatchMaker:
