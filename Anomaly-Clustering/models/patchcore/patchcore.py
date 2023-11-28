@@ -430,6 +430,25 @@ class AnomalyClusteringCore(torch.nn.Module):
             return _detach(features), patch_shapes
         return _detach(features)
 
+    def attentionweight(self, data):
+        print("{:-^80}".format("attentionweight"))
+        if isinstance(data, torch.utils.data.DataLoader):
+            weights = []
+            with tqdm.tqdm(total=len(data)) as progress:
+                for image in data:
+                    mask = image["mask"]
+                    with torch.no_grad():
+                        mask = mask.to(torch.float).to(self.device)
+                        weights.append(self._attentionweight(mask))
+                    progress.update(1)
+            return weights
+        return self._embed(data, mask)
+    
+    def _attentionweight(self, mask):
+        mask = torch.max_pool2d(mask, 8, 8)
+        return mask 
+    
+    
 # Image handling classes.
 class PatchMaker:
     def __init__(self, patchsize, stride=None):

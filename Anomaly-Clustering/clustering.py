@@ -137,7 +137,7 @@ if __name__ == "__main__":
 
     # 加载数据集，dataloader
     test_dataset = mvtec.MVTecDataset(source=path, split=mvtec.DatasetSplit.TEST,
-                                      classname='leather', resize=256, imagesize=224)
+                                      classname='leather_test', resize=256, imagesize=224)
     test_dataloader = torch.utils.data.DataLoader(
         test_dataset,
         batch_size=1,

@@ -1,10 +1,10 @@
 import os
 from enum import Enum
-
+import numpy as np
 import PIL
 import torch
 from torchvision import transforms
-
+import cv2 
 _CLASSNAMES = [
     "bottle",
     "cable",
@@ -72,7 +72,7 @@ class MVTecDataset(torch.utils.data.Dataset):
         self.imgpaths_per_class, self.data_to_iterate = self.get_image_data()
 
         self.transform_img = [
-            transforms.Resize(resize),
+            # transforms.Resize(resize),
             transforms.CenterCrop(imagesize),
             transforms.ToTensor(),
             transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
@@ -80,7 +80,7 @@ class MVTecDataset(torch.utils.data.Dataset):
         self.transform_img = transforms.Compose(self.transform_img)
 
         self.transform_mask = [
-            transforms.Resize(resize),
+            # transforms.Resize(resize),
             transforms.CenterCrop(imagesize),
             transforms.ToTensor(),
         ]
@@ -91,14 +91,28 @@ class MVTecDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         classname, anomaly, image_path, mask_path = self.data_to_iterate[idx]
         image = PIL.Image.open(image_path).convert("RGB")
-        image = self.transform_img(image)
+        
+        H, W = image.size 
+        cx = W / 2
+        cy = H / 2
 
         if self.split == DatasetSplit.TEST and mask_path is not None:
             mask = PIL.Image.open(mask_path)
-            mask = self.transform_mask(mask)
+            mask_np = np.array(mask, np.uint8)
+            cnts, _ = cv2.findContours(mask_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            M = cv2.moments(cnts[0])
+            cx = int(M["m10"] / M["m00"])
+            cy = int(M["m01"] / M["m00"])
+            
         else:
-            mask = torch.zeros([1, *image.size()[1:]])
-
+            mask = PIL.Image.fromarray(np.zeros(image.size))
+        mask = cv2.warpAffine(np.array(mask, np.uint8), np.float32([[1, 0 , -cx + W/2],[0, 1, -cy + H/2]]), (W,H), borderMode=cv2.BORDER_WRAP)
+        image = cv2.warpAffine(np.array(image, np.uint8), np.float32([[1, 0 , -cx + W/2],[0, 1, -cy + H/2]]), (W,H), borderMode=cv2.BORDER_WRAP)
+        
+        cv2.imwrite('mask.bmp', mask)
+        
+        mask = self.transform_mask(PIL.Image.fromarray(mask))
+        image = self.transform_img(PIL.Image.fromarray(image))
         return {
             "image": image,
             "mask": mask,
