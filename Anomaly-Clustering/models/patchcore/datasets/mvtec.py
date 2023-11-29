@@ -103,13 +103,16 @@ class MVTecDataset(torch.utils.data.Dataset):
             M = cv2.moments(cnts[0])
             cx = int(M["m10"] / M["m00"])
             cy = int(M["m01"] / M["m00"])
+            m = cv2.moments(mask_np)
+            mhu = cv2.HuMoments(m)
             
         else:
             mask = PIL.Image.fromarray(np.zeros(image.size))
+            mhu = np.array([[0.0],[0.0],[0.0],[0.0],[0.0],[0.0],[0.0]])
+            m = {"nu20":0.0,"nu11":0.0,"nu02":0.0,
+                 "nu30":0.0,"nu21":0.0,"nu12":0.0,"nu03":0.0}
         mask = cv2.warpAffine(np.array(mask, np.uint8), np.float32([[1, 0 , -cx + W/2],[0, 1, -cy + H/2]]), (W,H), borderMode=cv2.BORDER_WRAP)
         image = cv2.warpAffine(np.array(image, np.uint8), np.float32([[1, 0 , -cx + W/2],[0, 1, -cy + H/2]]), (W,H), borderMode=cv2.BORDER_WRAP)
-        
-        cv2.imwrite('mask.bmp', mask)
         
         mask = self.transform_mask(PIL.Image.fromarray(mask))
         image = self.transform_img(PIL.Image.fromarray(image))
@@ -121,6 +124,8 @@ class MVTecDataset(torch.utils.data.Dataset):
             "is_anomaly": int(anomaly != "good"),
             "image_name": "/".join(image_path.split("/")[-4:]),
             "image_path": image_path,
+            "moment":m,
+            "humoment":mhu,
         }
 
     def __len__(self):
